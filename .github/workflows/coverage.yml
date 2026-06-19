@@ -16,7 +16,7 @@ jobs:
   python-coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Detect Python project
         id: detect
         run: |
@@ -44,7 +44,7 @@ jobs:
     # Advisory: flags PRs that change source but add/modify no test files.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check for tests in the diff

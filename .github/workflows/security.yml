@@ -16,7 +16,7 @@ jobs:
     # in the repo" rule. gitleaks can be added alongside if licensed.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Scan tracked config + source files
@@ -32,7 +32,7 @@ jobs:
   sast-python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Detect Python project
         id: detect
         run: |
@@ -57,7 +57,7 @@ jobs:
     # Language-agnostic SAST (covers JS/TS, Python, etc.) via Semgrep rules.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Semgrep
         run: |
           pip install semgrep
