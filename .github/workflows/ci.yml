@@ -70,7 +70,7 @@ jobs:
             echo "No Node project detected - skipping JS checks."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         if: steps.detect.outputs.found == 'true'
         with:
           node-version: "20"
