@@ -42,7 +42,7 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
             echo "No Python detected - skipping Bandit."
           fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.detect.outputs.found == 'true'
         with:
           python-version: "3.11"
