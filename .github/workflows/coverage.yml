@@ -1,0 +1,52 @@
+# Test enforcement (Tenacious Standard §1, §6) - makes testing real, not optional.
+# Language-agnostic: CI calls `make coverage`, and the Makefile runs the right
+# tool for the project's stack (or whatever a team fills in for Go/Rust/etc.).
+# The "changed-code-needs-a-test" check below is pure git, so it works anywhere.
+name: coverage
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  MIN_COVERAGE: "60"   # starting threshold; raise as the suite grows.
+
+jobs:
+  coverage:
+    name: coverage
+    if: vars.CI_ENABLED == 'true'   # opt-in CI (Standard §4)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Provide common runtimes; the Makefile uses whichever the repo needs.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Coverage (make coverage)
+        run: make coverage
+
+  changed-code-needs-test:
+    name: changed-code-needs-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check for tests in the diff
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          changed=$(git diff --name-only "$base" HEAD)
+          # Source files vs test files - language-agnostic by name convention.
+          code=$(echo "$changed" | grep -E '\.(py|js|jsx|ts|tsx|go|rs|java|rb|php|cs|kt|swift|c|cpp)$' | grep -viE '(test|spec|_test\.)' || true)
+          tests=$(echo "$changed" | grep -iE '(test|spec|_test\.)' || true)
+          if [ -n "$code" ] && [ -z "$tests" ]; then
+            echo "::warning::This PR changes code but adds/updates no tests. Add proportionate tests (Standard §1)."
+          else
+            echo "Test check OK."
+          fi

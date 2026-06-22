@@ -1,0 +1,39 @@
+# CODEOWNERS - auto-assigns human reviewers to PRs (Tenacious Standard §1, §2).
+# Fixes the "no human review" gap: a human is pulled onto sensitive changes.
+# GitHub requests reviewers by matching the FILES a PR changes to the patterns
+# below. Branch protection then requires their approval (main needs 2).
+#
+# ============================================================================
+# HOW TO FILL THIS IN  (do one of the two styles, then delete the unused one)
+#
+#   Left side  = file pattern (which files trigger the review)
+#   Right side = the reviewer(s): a @username OR a @org/team
+#   Put TWO names on one line to require BOTH (e.g. Tech Lead AND Owner).
+#
+#   STYLE A - individual people (quickest, single repo):
+#       replace  @your-tech-lead     with the Tech Lead's GitHub username
+#       replace  @your-project-owner with the Project Owner's GitHub username
+#
+#   STYLE B - GitHub teams (best org-wide; create the teams first):
+#       replace  @your-tech-lead     with  @your-org/tech-leads
+#       replace  @your-project-owner with  @your-org/project-owners
+#
+#   The people/teams MUST have access to the repo, or GitHub ignores them.
+#   (The Tacit's bootstrapper can fill these in per project automatically.)
+# ============================================================================
+
+# Default reviewer for everything - usually the Tech Lead.
+*                   @your-tech-lead
+
+# Sensitive surfaces (Standard §1 risk areas) - Tech Lead reviews.
+# Rename these folders to match your project's actual structure.
+**/auth/**          @your-tech-lead
+**/security/**      @your-tech-lead
+**/migrations/**    @your-tech-lead
+**/alembic/**       @your-tech-lead
+/.github/**         @your-tech-lead
+
+# Highest-risk areas - require BOTH Tech Lead AND Project Owner.
+# (Two names on the line = both are requested; main requires 2 approvals.)
+**/billing/**       @your-tech-lead @your-project-owner
+**/payments/**      @your-tech-lead @your-project-owner

@@ -1,0 +1,74 @@
+# Security checks (Tenacious Standard §3) - secret scanning + static analysis.
+# Language-agnostic: secret scanning is text-based (any language); SAST runs via
+# `make sast`, so each project's Makefile decides the right analyzer for its
+# stack (Semgrep is multi-language and runs for all).
+name: security
+
+on:
+  pull_request:
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+jobs:
+  secret-scan:
+    # Primary: Gitleaks (the OSS standard, entropy + rules). Fallback: the
+    # zero-dep kit scanner, which always runs so protection holds with no extra
+    # tooling. Both are language-agnostic (text-based).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (primary secret scan)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+          # GITLEAKS_LICENSE only needed for org-owned repos; omit for personal.
+        continue-on-error: true   # zero-dep scanner below is the hard gate
+      - name: Zero-dep scanner (always runs, hard gate)
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files || true)
+          if [ ${#files[@]} -gt 0 ] && [ -f scripts/secret-scan.sh ]; then
+            bash scripts/secret-scan.sh "${files[@]}"
+          else
+            echo "secret-scan: no scanner script or no files; skipping."
+          fi
+
+  sast:
+    # Static analysis - part of opt-in CI (Standard §4); gated. Secret scanning
+    # above is NOT gated - it always runs (a leaked secret hurts any project).
+    if: vars.CI_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: SAST (make sast)
+        run: make sast
+
+  # Single status check named "security" that branch protection can require.
+  # Passes when secret-scan passes AND sast either passed or was skipped (CI off).
+  security:
+    name: security
+    needs: [secret-scan, sast]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate
+        run: |
+          set -euo pipefail
+          echo "secret-scan: ${{ needs.secret-scan.result }}"
+          echo "sast: ${{ needs.sast.result }}"
+          # secret-scan must succeed; sast must not have failed (skipped is ok).
+          if [ "${{ needs.secret-scan.result }}" != "success" ]; then
+            echo "::error::Secret scan failed."; exit 1
+          fi
+          if [ "${{ needs.sast.result }}" = "failure" ]; then
+            echo "::error::SAST failed."; exit 1
+          fi
+          echo "Security checks passed (sast skipped when CI is off)."
