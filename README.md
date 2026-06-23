@@ -145,9 +145,9 @@ the **GitHub MCP server** - opening pull requests, reading issues, checking CI,
 and so on, from plain-language requests in your editor.
 
 No secret is stored in the repo: `.mcp.json` references a token by name only
-(`${GITHUB_TOKEN}`). Never paste a real token into the file - it would be
-committed and the secret scanner will flag it. Each person connects with their
-**own** token, kept in their environment. To enable it:
+(`${GITHUB_FINE_GRAINED_TOKEN}`). Never paste a real token into the file - it
+would be committed and the secret scanner will flag it. Each person connects
+with their **own** token, kept in their environment. To enable it:
 
 1. Create a **fine-grained** Personal Access Token
    (GitHub - Settings - Developer settings - Fine-grained tokens):
@@ -160,9 +160,10 @@ committed and the secret scanner will flag it. Each person connects with their
      repos and permissions you grant, so a leak has a small blast radius.
    - If the repo is owned by an organization, an org admin may need to approve
      the token before it can reach the repo.
-2. Put the token in your shell environment (not in any file):
+2. Put the token in your shell environment (not committed to any file). The
+   name must match `.mcp.json` exactly - uppercase, no spaces:
    ```
-   export GITHUB_TOKEN=your_token_here
+   export GITHUB_FINE_GRAINED_TOKEN=your_token_here
    ```
 3. Open the project in Claude Code. The first time, it asks you to **approve**
    the GitHub server defined in `.mcp.json` - approve it.
