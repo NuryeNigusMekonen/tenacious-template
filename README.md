@@ -144,17 +144,33 @@ the VS Code / JetBrains extension), Claude can act on this repository through
 the **GitHub MCP server** - opening pull requests, reading issues, checking CI,
 and so on, from plain-language requests in your editor.
 
-No secret is stored in the repo: `.mcp.json` references a token by name only.
-Each person connects with their **own** GitHub token. To enable it:
+No secret is stored in the repo: `.mcp.json` references a token by name only
+(`${GITHUB_TOKEN}`). Never paste a real token into the file - it would be
+committed and the secret scanner will flag it. Each person connects with their
+**own** token, kept in their environment. To enable it:
 
-1. Create a GitHub Personal Access Token (a fine-grained token scoped to this
-   repo is enough) and set it in your shell:
+1. Create a **fine-grained** Personal Access Token
+   (GitHub - Settings - Developer settings - Fine-grained tokens):
+   - **Repository access:** Only select repositories - pick this repo.
+   - **Permissions:** Contents = Read and write, Pull requests = Read and write,
+     Issues = Read and write, Metadata = Read (required). Add Workflows =
+     Read and write only if you want Claude to edit GitHub Actions files.
+   - **Expiration:** set one (e.g. 90 days) - do not choose "no expiration".
+   - Prefer this over a classic token: a fine-grained token is limited to the
+     repos and permissions you grant, so a leak has a small blast radius.
+   - If the repo is owned by an organization, an org admin may need to approve
+     the token before it can reach the repo.
+2. Put the token in your shell environment (not in any file):
    ```
    export GITHUB_TOKEN=your_token_here
    ```
-2. Open the project in Claude Code. The first time, it asks you to **approve**
+3. Open the project in Claude Code. The first time, it asks you to **approve**
    the GitHub server defined in `.mcp.json` - approve it.
-3. Verify with `claude mcp list` - the `github` server should show connected.
+4. Verify with `claude mcp list` - the `github` server should show connected.
+
+The token only ever grants what you give it: a read-only token lets Claude read
+the repo but not push or merge; the write permissions above are what allow it to
+open and manage pull requests. It can never exceed your own GitHub access.
 
 This is per-person and entirely optional. Nothing else in the template depends
 on it; the workflows and checks run on GitHub regardless of whether you use it.
