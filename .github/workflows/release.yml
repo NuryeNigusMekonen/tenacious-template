@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Create release from conventional commits
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           # release-type infers the bump from commit messages and opens/updates
           # a release PR; merging it tags the version and writes the changelog.
