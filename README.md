@@ -161,11 +161,25 @@ with their **own** token, kept in their environment. To enable it:
      repos and permissions you grant, so a leak has a small blast radius.
    - If the repo is owned by an organization, an org admin may need to approve
      the token before it can reach the repo.
-2. Put the token in your shell environment (not committed to any file). The
-   name must match both MCP config files exactly - uppercase, no spaces:
-   ```
-   export GITHUB_FINE_GRAINED_TOKEN=your_token_here
-   ```
+2. Give the token to the assistant by name (`GITHUB_FINE_GRAINED_TOKEN` -
+   uppercase, no spaces - must match both MCP config files exactly). Either:
+   - **Shell environment** (per session): `export GITHUB_FINE_GRAINED_TOKEN=your_token_here`
+     before launching the tool. Simplest, but only lasts for that shell.
+   - **Claude Code, persistent (recommended):** put it in a local, git-ignored
+     `.claude/settings.local.json` so Claude Code injects it into the MCP
+     server every time - no need to re-export:
+     ```json
+     {
+       "env": { "GITHUB_FINE_GRAINED_TOKEN": "your_token_here" }
+     }
+     ```
+     This file is git-ignored (see `.gitignore`); the secret scanner will still
+     flag it if you ever try to commit it.
+
+   > Note: Claude Code does **not** read `.env` automatically. Putting the token
+   > only in `.env` is not enough - use one of the two methods above so the
+   > value reaches Claude Code's environment, or the `github` server stays
+   > unauthenticated.
 3. For **Claude Code**, open the project. The first time, it asks you to
    **approve** the GitHub server defined in `.mcp.json` - approve it.
 4. Verify Claude with `claude mcp list` - the `github` server should show
