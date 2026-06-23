@@ -25,6 +25,7 @@ and Java, and runs the right tools for whatever your project uses.
 | **Pull request & issue templates** | Make every pull request explain what changed and why; keep issue reports consistent. |
 | **Code-quality checks** | Flag oversized pull requests, dead code, and duplicated code to keep changes reviewable. |
 | **PR automation** | Auto-labels pull requests by what they touch, adds review hints (size, security, dependencies), and removes stale branches weekly (never `main`/`dev`/`staging`, never a branch with an open PR). It never merges or releases on its own - humans always decide. |
+| **Claude in your editor** (optional) | A ready `.mcp.json` lets Claude Code act on this repo through the GitHub MCP server. Per-person, opt-in, no secret stored in the repo. See Section 8. |
 | **Release automation** | Works out the next version, generates a changelog, and tags a release from your commit messages. |
 | **Branch-flow enforcement** | Keeps code moving one direction - feature → dev → staging → main - and blocks merges that skip a stage. |
 
@@ -136,7 +137,31 @@ This creates the `dev` and `staging` branches and protects `main`, `dev`, and
 
 ---
 
-## 8. Standard formats
+## 8. Using Claude in your editor (optional)
+
+This repo ships a `.mcp.json` so that, if you use **Claude Code** (the CLI or
+the VS Code / JetBrains extension), Claude can act on this repository through
+the **GitHub MCP server** - opening pull requests, reading issues, checking CI,
+and so on, from plain-language requests in your editor.
+
+No secret is stored in the repo: `.mcp.json` references a token by name only.
+Each person connects with their **own** GitHub token. To enable it:
+
+1. Create a GitHub Personal Access Token (a fine-grained token scoped to this
+   repo is enough) and set it in your shell:
+   ```
+   export GITHUB_TOKEN=your_token_here
+   ```
+2. Open the project in Claude Code. The first time, it asks you to **approve**
+   the GitHub server defined in `.mcp.json` - approve it.
+3. Verify with `claude mcp list` - the `github` server should show connected.
+
+This is per-person and entirely optional. Nothing else in the template depends
+on it; the workflows and checks run on GitHub regardless of whether you use it.
+
+---
+
+## 9. Standard formats
 
 ### Commit / pull-request titles
 
@@ -180,7 +205,7 @@ Every pull request should answer:
 
 ---
 
-## 9. Good to know
+## 10. Good to know
 
 - **Security and quality checks start advisory** - they report problems but
   don't block merges at first, so you can adopt them gradually and tune out
