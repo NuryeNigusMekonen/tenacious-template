@@ -24,6 +24,7 @@ and Java, and runs the right tools for whatever your project uses.
 | **Reviewer assignment** | Automatically requests the right human reviewer when sensitive files change (`CODEOWNERS`). |
 | **Pull request & issue templates** | Make every pull request explain what changed and why; keep issue reports consistent. |
 | **Code-quality checks** | Flag oversized pull requests, dead code, and duplicated code to keep changes reviewable. |
+| **PR automation** | Auto-labels pull requests by what they touch, adds review hints (size, security, dependencies), and removes stale branches weekly (never `main`/`dev`/`staging`, never a branch with an open PR). It never merges or releases on its own - humans always decide. |
 | **Release automation** | Works out the next version, generates a changelog, and tags a release from your commit messages. |
 | **Branch-flow enforcement** | Keeps code moving one direction - feature → dev → staging → main - and blocks merges that skip a stage. |
 
