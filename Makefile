@@ -1,10 +1,11 @@
 # The single command surface for this project.
-# CI runs these SAME targets, so local and pipeline behaviour stay identical.
+# Where CI runs a target (coverage, secret-scan), it calls the SAME target here,
+# so local and pipeline behaviour stay identical.
 #
 # Auto-detects Python and/or Node and runs the right commands. A polyglot repo
 # (both) runs both. Override any command by editing the recipe for your stack.
 
-.PHONY: help install lint format test build coverage sast secret-scan
+.PHONY: help install lint format test build coverage secret-scan
 
 # --- stack detection ---------------------------------------------------------
 HAS_PY   := $(shell { [ -f pyproject.toml ] || ls requirements*.txt >/dev/null 2>&1 || git ls-files '*.py' 2>/dev/null | grep -q . ; } && echo yes)
@@ -14,7 +15,7 @@ HAS_RUST := $(shell [ -f Cargo.toml ] && echo yes)
 HAS_JAVA := $(shell { [ -f pom.xml ] || ls build.gradle* >/dev/null 2>&1 ; } && echo yes)
 
 help:
-	@echo "Targets: install | lint | format | test | build | coverage | sast | secret-scan"
+	@echo "Targets: install | lint | format | test | build | coverage | secret-scan"
 	@echo "Detected: Python=$(if $(HAS_PY),yes,no) Node=$(if $(HAS_JS),yes,no) Go=$(if $(HAS_GO),yes,no) Rust=$(if $(HAS_RUST),yes,no) Java=$(if $(HAS_JAVA),yes,no)"
 
 install:
@@ -132,14 +133,6 @@ ifeq ($(HAS_RUST),yes)
 	cargo llvm-cov 2>/dev/null || cargo test
 endif
 	@echo "coverage: done"
-
-sast:
-	@# Semgrep is multi-language (covers Python too) and runs for any stack.
-	@# It is the single SAST tool here; CodeQL adds deeper analysis on the
-	@# default branch + weekly (see .github/workflows/codeql.yml).
-	pip install semgrep >/dev/null 2>&1 || true
-	semgrep --config=auto --error || true   # advisory; flip --error to block
-	@echo "sast: done"
 
 secret-scan:
 	bash scripts/secret-scan.sh $$(git ls-files)

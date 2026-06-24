@@ -20,7 +20,7 @@ and Java, and runs the right tools for whatever your project uses.
 |------|--------------|
 | **Secret scanning** | Blocks credentials (passwords, API keys, tokens) from being committed or pushed - at commit time, push time, and in CI. |
 | **Build, lint, and test checks** | Run automatically on every pull request, so broken or unformatted code is caught before it merges. |
-| **Security analysis** | Scans code for security vulnerabilities (Semgrep on pull requests; deeper CodeQL analysis on the main branch and weekly). |
+| **Security analysis** | Scans code for security vulnerabilities with CodeQL data-flow analysis on the main branch and weekly. |
 | **Dependency scanning** | Flags outdated or vulnerable dependencies and opens pull requests to update them automatically. |
 | **Test coverage** | Enforces a minimum test coverage and warns when code changes ship without tests. |
 | **Reviewer assignment** | Automatically requests the right human reviewer when sensitive files change (`CODEOWNERS`). |
