@@ -15,7 +15,7 @@ set -euo pipefail
 RED=$'\033[0;31m'; GRN=$'\033[0;32m'; NC=$'\033[0m'
 
 # Paths that legitimately hold placeholders or describe secret patterns.
-ALLOWLIST_PATHS_RE='(\.env\.example$|\.env\.template$|secret-scan\.sh$|\.gitleaks\.toml$|\.pre-commit-config\.yaml$|security\.yml$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|uv\.lock$|AGENTS\.md$|README\.md$|CONTRIBUTING\.md$)'
+ALLOWLIST_PATHS_RE='(\.env\.example$|\.env\.template$|secret-scan\.sh$|\.gitleaks\.toml$|security\.yml$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$|uv\.lock$|AGENTS\.md$|README\.md$|CONTRIBUTING\.md$)'
 
 PRAGMA='pragma: allowlist secret'
 
