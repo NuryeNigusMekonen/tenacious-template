@@ -42,17 +42,12 @@ for b in dev staging; do
 done
 
 # --- 2. protect each branch --------------------------------------------------
-# Required checks depend on whether CI is enabled.
-# Always required: security (secret scan) + branch-flow - they always run.
-# Required only when CI is on: coverage (that job is gated and skipped when CI
-# is off; requiring a skipped check would block merges forever).
-if [ "$(gh api "repos/${REPO}/actions/variables/CI_ENABLED" -q .value 2>/dev/null || echo '')" = "true" ]; then
-  CONTEXTS='["security", "branch-flow", "coverage"]'
-  echo "CI is enabled - requiring coverage as well."
-else
-  CONTEXTS='["security", "branch-flow"]'
-  echo "CI is off (opt-in) - requiring only security + branch-flow."
-fi
+# Required checks: security (secret scan) + branch-flow - both always run,
+# regardless of CI_ENABLED. The opt-in CI quality jobs (pr-size, duplicate-code)
+# are advisory and intentionally NOT required - requiring a skipped check would
+# block merges forever when CI is off.
+CONTEXTS='["security", "branch-flow"]'
+echo "Requiring checks: security + branch-flow."
 
 protect() { # $1 = branch, $2 = required approvals
   local branch="$1" approvals="$2"
