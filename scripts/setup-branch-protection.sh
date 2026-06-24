@@ -42,10 +42,9 @@ for b in dev staging; do
 done
 
 # --- 2. protect each branch --------------------------------------------------
-# Required checks: security (secret scan) + branch-flow - both always run,
-# regardless of CI_ENABLED. The opt-in CI quality jobs (pr-size, duplicate-code)
-# are advisory and intentionally NOT required - requiring a skipped check would
-# block merges forever when CI is off.
+# Required checks: security (secret scan + SAST gate) + branch-flow. The quality
+# jobs (pr-title, pr-size, duplicate-code) run on every PR but are advisory and
+# intentionally NOT required, so a warning never blocks a merge.
 CONTEXTS='["security", "branch-flow"]'
 echo "Requiring checks: security + branch-flow."
 

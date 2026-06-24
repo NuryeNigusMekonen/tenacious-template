@@ -37,7 +37,6 @@ jobs:
   # --- Reviewability: PR size --------------------------------------------------
   # Advisory; flip to blocking once tuned.
   pr-size:
-    if: vars.CI_ENABLED == 'true'   # opt-in CI
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -57,7 +56,6 @@ jobs:
 
   # --- Maintainability: duplicate code -----------------------------------------
   duplicate-code:
-    if: vars.CI_ENABLED == 'true'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4

@@ -83,17 +83,15 @@ template to your project.
 
 ---
 
-## 5. Turning on continuous integration
+## 5. Continuous integration
 
-The heavier checks (build, code quality, security analysis) are
-**off by default**, so short projects can rely on `make` and the
-local hooks alone. To turn the full pipeline on for a longer-running project:
+The workflows run automatically once the repo is on GitHub - there is nothing to
+switch on. Every pull request and push gets the full set of checks: secret
+scanning, Semgrep static analysis, the security gate, branch-flow direction,
+and the advisory quality checks (PR title, PR size, duplicate code).
 
-1. Go to **Settings → Secrets and variables → Actions → Variables**.
-2. Add a variable named `CI_ENABLED` with the value `true`.
-
-Secret scanning and branch-flow enforcement always run, on every project,
-because they protect any codebase regardless of size.
+Secret scanning and branch-flow enforcement protect any codebase regardless of
+size, and run on every project.
 
 ---
 

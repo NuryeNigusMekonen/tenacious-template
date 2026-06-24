@@ -2,7 +2,7 @@
 # leaked credentials.
 #
 #   - secret-scan : Gitleaks + zero-dep scanner (always runs, text-based)
-#   - sast        : Semgrep static analysis via `make sast` (per PR, opt-in CI)
+#   - sast        : Semgrep static analysis via `make sast` (per PR)
 #   - security    : single REQUIRED status check gating the two jobs above
 #
 # Semgrep is the project's one static-analysis tool. It is multi-language
@@ -48,11 +48,9 @@ jobs:
             echo "secret-scan: no scanner script or no files; skipping."
           fi
 
-  # --- SAST (Semgrep static analysis, per PR, opt-in CI) -----------------------
-  # Static analysis - part of opt-in CI; gated. Secret scanning above is NOT
-  # gated - it always runs. Semgrep is the single SAST tool (see `make sast`).
+  # --- SAST (Semgrep static analysis, per PR) ----------------------------------
+  # Semgrep is the single SAST tool (see `make sast`). Runs on every PR/push.
   sast:
-    if: vars.CI_ENABLED == 'true'
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +61,9 @@ jobs:
         run: make sast
 
   # --- Security gate (single REQUIRED status check) ----------------------------
-  # Passes when secret-scan passes AND sast either passed or was skipped (CI off).
+  # Passes only when BOTH secret-scan and sast succeed. `if: always()` so the
+  # gate still runs (and fails) even when a dependency fails rather than being
+  # skipped along with it.
   security:
     name: security
     needs: [secret-scan, sast]
@@ -75,11 +75,10 @@ jobs:
           set -euo pipefail
           echo "secret-scan: ${{ needs.secret-scan.result }}"
           echo "sast: ${{ needs.sast.result }}"
-          # secret-scan must succeed; sast must not have failed (skipped is ok).
           if [ "${{ needs.secret-scan.result }}" != "success" ]; then
             echo "::error::Secret scan failed."; exit 1
           fi
-          if [ "${{ needs.sast.result }}" = "failure" ]; then
+          if [ "${{ needs.sast.result }}" != "success" ]; then
             echo "::error::SAST failed."; exit 1
           fi
-          echo "Security checks passed (sast skipped when CI is off)."
+          echo "Security checks passed."
