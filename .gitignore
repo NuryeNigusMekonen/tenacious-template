@@ -2,38 +2,9 @@
 .env
 *.env
 !*.env.example
-
+.claude
 # Editor / OS
 .vscode/
 .idea/
 .DS_Store
-
-# --- Add patterns for your language / stack below (uncomment what you use) ---
-#
-# Python:
-# __pycache__/
-# *.py[cod]
-# .venv/
-# venv/
-# *.egg-info/
-# .pytest_cache/
-# .ruff_cache/
-# .coverage
-# htmlcov/
-#
-# Node / frontend:
-# node_modules/
-# dist/
-# build/
-#
-# Go:
-# /bin/
-# *.test
-#
-# Rust:
-# /target/
-#
-# Java:
-# target/
-# *.class
-# .gradle/
+Doc/
