@@ -1,41 +1,33 @@
 # Security - one gate for everything whose goal is finding vulnerabilities and
-# leaked credentials. Consolidated from the former security.yml + codeql.yml.
+# leaked credentials.
 #
 #   - secret-scan : Gitleaks + zero-dep scanner (always runs, text-based)
-#   - codeql      : deep data-flow static analysis on main + weekly (opt-in CI)
-#   - security    : single REQUIRED status check (currently gates secret-scan)
+#   - sast        : Semgrep static analysis via `make sast` (per PR, opt-in CI)
+#   - security    : single REQUIRED status check gating the two jobs above
 #
-# Trigger split by job (all skip the events not listed):
-#   pull_request + push:any-branch -> secret-scan, security  (per-change gating)
-#   push:main + weekly schedule    -> codeql                  (periodic deep net)
-#
-# CodeQL is the project's static-analysis tool (replacing per-PR Semgrep/SAST):
-# it runs on the default branch + weekly rather than on every PR.
+# Semgrep is the project's one static-analysis tool. It is multi-language
+# (covers Python, JS/TS, Go, etc.) and runs on every PR/push via `make sast`,
+# so local and CI behaviour stay identical.
 #
 # The "security" job name is load-bearing: scripts/setup-branch-protection.sh
 # requires it by name. Do not rename it without updating that script.
 name: security
 
 on:
-  pull_request:           # gate every PR (secret-scan, security)
+  pull_request:           # gate every PR (secret-scan, sast, security)
   push:
     branches: ["**"]      # also catch direct pushes to any branch (no PR)
-  schedule:
-    - cron: "0 3 * * 1"   # weekly, Monday 03:00 UTC - for CodeQL only
 
 permissions:
   contents: read
-  security-events: write   # required to upload CodeQL results
 
 jobs:
   # --- Secret scanning (always runs - a leaked secret hurts any project) -------
   secret-scan:
-    # Skip the scheduled run: nothing changed, this is CodeQL's slot.
-    if: github.event_name != 'schedule'
     # Primary: Gitleaks (the OSS standard, entropy + rules). Fallback: the
     # zero-dep kit scanner, which always runs so protection holds with no extra
     # tooling. Both are language-agnostic (text-based).
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,73 +48,38 @@ jobs:
             echo "secret-scan: no scanner script or no files; skipping."
           fi
 
+  # --- SAST (Semgrep static analysis, per PR, opt-in CI) -----------------------
+  # Static analysis - part of opt-in CI; gated. Secret scanning above is NOT
+  # gated - it always runs. Semgrep is the single SAST tool (see `make sast`).
+  sast:
+    if: vars.CI_ENABLED == 'true'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: SAST (make sast)
+        run: make sast
+
   # --- Security gate (single REQUIRED status check) ----------------------------
-  # One stable check name for branch protection to require. Currently it just
-  # reflects secret-scan; keeping it as a separate gate means deeper per-PR
-  # checks can be added to `needs` later without changing the required-check
-  # name. Per-PR static analysis was dropped in favour of CodeQL (main + weekly).
+  # Passes when secret-scan passes AND sast either passed or was skipped (CI off).
   security:
     name: security
-    needs: [secret-scan]
-    if: always() && github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    needs: [secret-scan, sast]
+    if: always()
+    runs-on: self-hosted
     steps:
       - name: Gate
         run: |
           set -euo pipefail
           echo "secret-scan: ${{ needs.secret-scan.result }}"
+          echo "sast: ${{ needs.sast.result }}"
+          # secret-scan must succeed; sast must not have failed (skipped is ok).
           if [ "${{ needs.secret-scan.result }}" != "success" ]; then
             echo "::error::Secret scan failed."; exit 1
           fi
-          echo "Security checks passed."
-
-  # --- CodeQL (deep static analysis - main + weekly only) ----------------------
-  # GitHub-native data-flow analysis; the project's static-analysis tool. Kept
-  # LIGHT for speed: default branch (main) + weekly, NOT every PR. This is the
-  # only SAST in the template - there is no per-PR Semgrep step.
-  codeql:
-    if: >-
-      vars.CI_ENABLED == 'true' &&
-      (github.event_name == 'schedule' ||
-       (github.event_name == 'push' && github.ref == 'refs/heads/main'))
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Languages analysed with build-mode: none - safe to list even when the
-        # repo doesn't use them (CodeQL finds no code and the job is a quick
-        # no-op, so these never fail a project that lacks the language).
-        #
-        # COMPILED LANGUAGES (Go, C/C++) need a real build (build-mode:
-        # autobuild) and would FAIL on a repo that doesn't use them, so they are
-        # NOT listed by default. A Go or C/C++ project should add its entry, e.g.:
-        #   - language: go
-        #     build-mode: autobuild
-        #   - language: c-cpp
-        #     build-mode: autobuild
-        include:
-          - language: python
-            build-mode: none
-          - language: javascript-typescript
-            build-mode: none
-          - language: java-kotlin
-            build-mode: none
-          - language: csharp
-            build-mode: none
-          - language: ruby
-            build-mode: none
-          - language: rust
-            build-mode: none
-          - language: swift
-            build-mode: none
-    steps:
-      - uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-      - name: Analyze
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{ matrix.language }}"
+          if [ "${{ needs.sast.result }}" = "failure" ]; then
+            echo "::error::SAST failed."; exit 1
+          fi
+          echo "Security checks passed (sast skipped when CI is off)."

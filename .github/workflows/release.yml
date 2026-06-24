@@ -1,7 +1,6 @@
-# Release automation - version, tag, and changelog on
-# merge to the release branch. Uses Conventional Commits to decide the bump
-# (feat -> minor, fix -> patch, BREAKING CHANGE -> major), aligning with the
-# semantic-versioning + release-log discipline of the standard.
+# Release automation - version, tag, and changelog on merge to the release
+# branch. Semantic versioning is driven entirely by Conventional Commit
+# messages: feat -> minor, fix -> patch, BREAKING CHANGE (or !) -> major.
 #
 # This produces the version/tag/changelog; promotion + approvals are still
 # governed by the branch-protection rules.
@@ -16,7 +15,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
