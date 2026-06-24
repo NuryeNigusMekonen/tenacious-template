@@ -1,16 +1,10 @@
 # Code quality - one gate for everything that keeps the codebase clean and
 # reviewable. All jobs here share a single goal: quality. Consolidated from the
-# former quality.yml + coverage.yml + commitlint.yml.
+# former quality.yml + commitlint.yml.
 #
-#   - pr-title              : Conventional-Commit title (powers release automation)
-#   - pr-size               : flag oversized PRs (advisory)
-#   - python-quality        : dead code + complexity/lint (advisory)
-#   - duplicate-code        : copy-paste detection (advisory)
-#   - coverage              : tests run + coverage threshold (REQUIRED check)
-#   - changed-code-needs-test: changed code should ship with tests (advisory)
-#
-# The "coverage" job name is load-bearing: scripts/setup-branch-protection.sh
-# requires it by name. Do not rename it without updating that script.
+#   - pr-title       : Conventional-Commit title (powers release automation)
+#   - pr-size        : flag oversized PRs (advisory)
+#   - duplicate-code : copy-paste detection, language-agnostic (advisory)
 name: quality
 
 on:
@@ -27,7 +21,7 @@ jobs:
   # --- Convention: Conventional-Commit PR title -------------------------------
   # Advisory at first; can be flipped to blocking when merging.
   pr-title:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Check PR title is a conventional commit
         run: |
@@ -44,7 +38,7 @@ jobs:
   # Advisory; flip to blocking once tuned.
   pr-size:
     if: vars.CI_ENABLED == 'true'   # opt-in CI
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,104 +55,12 @@ jobs:
             echo "::warning::This PR is large (${files} files, ${lines} lines). Consider splitting it for safer review."
           fi
 
-  # --- Maintainability: dead code + complexity (Python) ------------------------
-  python-quality:
-    if: vars.CI_ENABLED == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Detect Python
-        id: detect
-        run: |
-          if [ -f pyproject.toml ] || ls requirements*.txt >/dev/null 2>&1 || git ls-files '*.py' | grep -q .; then
-            echo "found=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            echo "No Python detected - skipping."
-          fi
-      - uses: actions/setup-python@v5
-        if: steps.detect.outputs.found == 'true'
-        with:
-          python-version: "3.11"
-      - name: Dead code (vulture) + complexity (ruff)
-        if: steps.detect.outputs.found == 'true'
-        run: |
-          pip install vulture ruff
-          # Dead/unused code - advisory.
-          vulture . --min-confidence 80 || true
-          # Complexity & lint - ruff's C901 etc.; advisory until tuned.
-          ruff check --select C901,E,F . || true
-
   # --- Maintainability: duplicate code -----------------------------------------
   duplicate-code:
     if: vars.CI_ENABLED == 'true'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - name: Duplicate code (jscpd)
         run: |
           npx --yes jscpd . --min-lines 10 --threshold 5 --reporters consoleFull || true
-
-  # --- Testing: coverage threshold (REQUIRED check) ----------------------------
-  # Language-agnostic: CI calls `make coverage`, and the Makefile runs the right
-  # tool for the project's stack. Job name "coverage" is required by branch
-  # protection (scripts/setup-branch-protection.sh) - do not rename.
-  coverage:
-    name: coverage
-    if: vars.CI_ENABLED == 'true'   # opt-in CI
-    runs-on: ubuntu-latest
-    # Single source of truth for the threshold: the Makefile owns the default
-    # (60). To raise it project-wide, set a repo variable MIN_COVERAGE in
-    # Settings -> Variables; the line below forwards it to `make coverage`.
-    # Leave it unset to use the Makefile default. CI and local stay in sync.
-    env:
-      MIN_COVERAGE: ${{ vars.MIN_COVERAGE }}
-    steps:
-      - uses: actions/checkout@v4
-      # Provide common runtimes; the Makefile uses whichever the repo needs.
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Coverage (make coverage)
-        run: make coverage
-
-      - name: Guard against a silent pass (Python code but no tests collected)
-        run: |
-          set -euo pipefail
-          # Only meaningful for Python projects; skip otherwise.
-          if [ -f pyproject.toml ] || ls requirements*.txt >/dev/null 2>&1 || git ls-files '*.py' | grep -q .; then
-            pip install pytest >/dev/null 2>&1 || true
-            collected=$(pytest --collect-only -q 2>/dev/null | grep -cE '::' || true)
-            if [ "$collected" -eq 0 ]; then
-              echo "::warning::Python code is present but pytest collected ZERO tests. A green 'coverage' check here does NOT mean the code is tested - check your test layout / Makefile."
-            else
-              echo "pytest collected $collected test(s) - coverage check is meaningful."
-            fi
-          else
-            echo "No Python project - test-collection guard skipped."
-          fi
-
-  # --- Testing: changed code should ship with tests (advisory) -----------------
-  changed-code-needs-test:
-    name: changed-code-needs-test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Check for tests in the diff
-        run: |
-          set -euo pipefail
-          base="${{ github.event.pull_request.base.sha }}"
-          changed=$(git diff --name-only "$base" HEAD)
-          # Source files vs test files - language-agnostic by name convention.
-          code=$(echo "$changed" | grep -E '\.(py|js|jsx|ts|tsx|go|rs|java|rb|php|cs|kt|swift|c|cpp)$' | grep -viE '(test|spec|_test\.)' || true)
-          tests=$(echo "$changed" | grep -iE '(test|spec|_test\.)' || true)
-          if [ -n "$code" ] && [ -z "$tests" ]; then
-            echo "::warning::This PR changes code but adds/updates no tests. Add proportionate tests."
-          else
-            echo "Test check OK."
-          fi

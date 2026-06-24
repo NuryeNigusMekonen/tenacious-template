@@ -7,9 +7,9 @@
 #   - cleanup-stale-branches  : weekly stale-branch sweep
 #
 # These never merge, release, or override a human decision. Versioning is owned
-# by release.yml, commit-title checks + coverage by quality.yml, secret scanning
-# + CodeQL by security.yml, reviewer routing by CODEOWNERS - this file does not
-# duplicate them.
+# by release.yml, commit-title + code-quality checks by quality.yml, secret
+# scanning + Semgrep SAST by security.yml, reviewer routing by CODEOWNERS - this
+# file does not duplicate them.
 #
 # The "branch-flow" job name is load-bearing: scripts/setup-branch-protection.sh
 # requires it by name. Do not rename it without updating that script.
@@ -41,7 +41,7 @@ jobs:
   branch-flow:
     name: branch-flow
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Validate the merge direction
         run: |
@@ -89,7 +89,7 @@ jobs:
   # --- Auto-label a PR by the kinds of files it touches ------------------------
   auto-label:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Label by file changes
         uses: actions/github-script@v7
@@ -126,7 +126,7 @@ jobs:
   # --- Post context-aware review hints (advisory comment) ----------------------
   smart-comments:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Add review hints
         uses: actions/github-script@v7
@@ -156,7 +156,7 @@ jobs:
   # --- Weekly stale-branch cleanup (safe: protects the real flow) --------------
   cleanup-stale-branches:
     if: github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Delete branches with no commits in 30+ days
         uses: actions/github-script@v7
