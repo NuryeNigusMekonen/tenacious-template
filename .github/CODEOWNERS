@@ -21,8 +21,12 @@
 #   The people/teams MUST have access to the repo, or GitHub ignores them.
 # ============================================================================
 
-# Default reviewer for everything - usually the Tech Lead.
-*                   @your-tech-lead
+# Default reviewers for everything - Tech Lead AND Project Owner.
+# Both are auto-requested and notified on every PR to a protected branch.
+# How many must actually approve is set per branch (see setup-branch-protection.sh):
+#   main    = 2 approvals -> in practice BOTH must approve (joint production sign-off)
+#   dev/staging = 1 approval -> either one approving is enough
+*                   @your-tech-lead @your-project-owner
 
 # Sensitive surfaces - Tech Lead reviews.
 # Rename these folders to match your project's actual structure.
