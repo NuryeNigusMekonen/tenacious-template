@@ -6,8 +6,8 @@ template"** on GitHub to create a new repository from it.
 
 This single guide is everything you need to use the template end to end:
 what it does, how to set it up, what to run, and the standard formats to follow.
-**New here? Start with `MANUAL.md` - the one-page quick start.** This README is
-the full reference for when you need more detail.
+**New here? Start with the one-page quick start: `Document/MANUAL.pdf`.** This
+README is the full reference for when you need more detail.
 
 It is multi-language - it auto-detects Python, JavaScript/TypeScript, Go, Rust,
 and Java, and runs the right tools for whatever your project uses.
