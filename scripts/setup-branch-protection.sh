@@ -21,8 +21,8 @@
 #
 # NOTE on direction (feature -> dev -> staging -> main): GitHub protection
 # enforces PR-only + checks + reviewers, but does NOT natively reject a
-# wrong-source merge (e.g. dev -> main). The branch-flow workflow
-# (.github/workflows/branch-flow.yml) enforces the direction on pull requests.
+# wrong-source merge (e.g. dev -> main). The branch-flow job in the governance
+# workflow (.github/workflows/governance.yml) enforces direction on pull requests.
 set -euo pipefail
 
 REPO="${1:?usage: setup-branch-protection.sh <owner/repo>}"
@@ -44,11 +44,11 @@ done
 # --- 2. protect each branch --------------------------------------------------
 # Required checks depend on whether CI is enabled.
 # Always required: security (secret scan) + branch-flow - they always run.
-# Required only when CI is on: ci + coverage (those jobs are gated and skipped
-# when CI is off; requiring a skipped check would block merges forever).
+# Required only when CI is on: coverage (that job is gated and skipped when CI
+# is off; requiring a skipped check would block merges forever).
 if [ "$(gh api "repos/${REPO}/actions/variables/CI_ENABLED" -q .value 2>/dev/null || echo '')" = "true" ]; then
-  CONTEXTS='["security", "branch-flow", "ci", "coverage"]'
-  echo "CI is enabled - requiring ci + coverage as well."
+  CONTEXTS='["security", "branch-flow", "coverage"]'
+  echo "CI is enabled - requiring coverage as well."
 else
   CONTEXTS='["security", "branch-flow"]'
   echo "CI is off (opt-in) - requiring only security + branch-flow."
@@ -87,4 +87,4 @@ protect staging 1             # dev -> staging: Tech Lead review
 echo ""
 echo "Done. main (production) protected; dev / staging created and protected."
 echo "Reminder: the directional rule (no skipping, no backward flow) is"
-echo "enforced on pull requests by .github/workflows/branch-flow.yml."
+echo "enforced on pull requests by the branch-flow job in .github/workflows/governance.yml."
