@@ -25,15 +25,24 @@ protected branch goes through a pull request.
   names with placeholder values only. The pre-commit hook + CI scan enforce this.
 - **Every PR has a real description** - what changed and why, not a restatement
   of the diff (use the PR template).
-- **Required checks must pass** before merge - build, lint, test, secret-scan.
+- **Required checks must pass** before merge - security (secret-scan) and branch-flow.
 - **Keep PRs small and focused** - one concern per PR; large PRs are hard to
   review safely.
-- **Tests travel with code** - new behaviour carries proportionate tests.
+- **Tests travel with code** - new behaviour should carry proportionate tests
+  (a convention here, not an enforced gate; run your stack's test tool directly).
 
 ## Commands
 
-The `Makefile` is the single command surface: `make install`, `make lint`,
-`make test`, `make build`. CI runs the same targets.
+The `Makefile` is the single command surface: `make install`, `make build`,
+`make sast`, `make secret-scan`. CI runs the same targets.
+
+## CI runner
+
+All workflows run on a **self-hosted runner** (`runs-on: self-hosted`), not
+GitHub-hosted VMs. Unlike a fresh `ubuntu-latest` VM, the runner persists state
+between jobs and is **not** pre-loaded with tooling, so the host must have these
+on `PATH`: `git`, `bash`, `python3` + `pip`, `node` + `npx`, and `make`. If a
+job fails with "command not found", install the missing tool on the runner host.
 
 ## First-time setup
 

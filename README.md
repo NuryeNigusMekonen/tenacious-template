@@ -1,13 +1,11 @@
 # Project Template - User Guide
 
 A GitHub template repository that gives every new project a secure-by-default,
-tested-by-default, governed-by-default starting point. Click **"Use this
+governed-by-default starting point. Click **"Use this
 template"** on GitHub to create a new repository from it.
 
 This single guide is everything you need to use the template end to end:
 what it does, how to set it up, what to run, and the standard formats to follow.
-**New here? Start with the one-page quick start: `Document/MANUAL.pdf`.** This
-README is the full reference for when you need more detail.
 
 It is multi-language - it auto-detects Python, JavaScript/TypeScript, Go, Rust,
 and Java, and runs the right tools for whatever your project uses.
@@ -19,13 +17,12 @@ and Java, and runs the right tools for whatever your project uses.
 | Area | What it does |
 |------|--------------|
 | **Secret scanning** | Blocks credentials (passwords, API keys, tokens) from being committed or pushed - at commit time, push time, and in CI. |
-| **Build, lint, and test checks** | Run automatically on every pull request, so broken or unformatted code is caught before it merges. |
-| **Security analysis** | Scans code for security vulnerabilities with CodeQL data-flow analysis on the main branch and weekly. |
+| **Build checks** | Run automatically on every pull request, so broken builds are caught before they merge. |
+| **Security analysis** | Scans code for security vulnerabilities with Semgrep static analysis on every pull request. |
 | **Dependency scanning** | Flags outdated or vulnerable dependencies and opens pull requests to update them automatically. |
-| **Test coverage** | Enforces a minimum test coverage and warns when code changes ship without tests. |
 | **Reviewer assignment** | Automatically requests the right human reviewer when sensitive files change (`CODEOWNERS`). |
 | **Pull request & issue templates** | Make every pull request explain what changed and why; keep issue reports consistent. |
-| **Code-quality checks** | Flag oversized pull requests, dead code, and duplicated code to keep changes reviewable. |
+| **Code-quality checks** | Flag oversized pull requests and duplicated code to keep changes reviewable. |
 | **PR automation** | Auto-labels pull requests by what they touch, adds review hints (size, security, dependencies), and removes stale branches weekly (never `main`/`dev`/`staging`, never a branch with an open PR). It never merges or releases on its own - humans always decide. |
 | **Claude / Codex in your editor** (optional) | Ready MCP config lets Claude Code and OpenAI Codex talk to GitHub from this repo. Per-person, opt-in, no secret stored in the repo. See Section 8. |
 | **Release automation** | Works out the next version, generates a changelog, and tags a release from your commit messages. |
@@ -60,11 +57,8 @@ behaviour match. They auto-detect your language.
 | Command | What it does |
 |---------|--------------|
 | `make install` | Install dependencies and activate the local secret-scanning hooks |
-| `make lint` | Check code style and quality |
-| `make format` | Auto-format the code |
-| `make test` | Run the test suite |
 | `make build` | Build the project |
-| `make coverage` | Run tests with a coverage check |
+| `make sast` | Run Semgrep static analysis |
 | `make secret-scan` | Scan the repository for secrets |
 
 If your project uses a language or layout the defaults don't cover, edit the
@@ -91,8 +85,8 @@ template to your project.
 
 ## 5. Turning on continuous integration
 
-The heavier checks (build, lint, test, coverage, code quality, deep security
-analysis) are **off by default**, so short projects can rely on `make` and the
+The heavier checks (build, code quality, security analysis) are
+**off by default**, so short projects can rely on `make` and the
 local hooks alone. To turn the full pipeline on for a longer-running project:
 
 1. Go to **Settings → Secrets and variables → Actions → Variables**.
@@ -130,7 +124,7 @@ This creates the `dev` and `staging` branches and protects `main`, `dev`, and
 ## 7. How to work with the template (the everyday flow)
 
 1. Cut a `feature/...` branch from `dev`.
-2. Make your change; run `make lint` and `make test` locally.
+2. Make your change; run `make build` and `make sast` locally.
 3. Commit - the secret hook checks for credentials automatically.
 4. Open a pull request into `dev`, using the pull-request template.
 5. The automated checks run; address anything they flag.
@@ -188,7 +182,7 @@ https://api.githubcopilot.com/mcp/readonly
 ```
 
 This is per-person and entirely optional. Nothing else in the template depends
-on it; the workflows and checks run on GitHub regardless of whether you use it.
+on it; the CI workflows and checks run regardless of whether you use it.
 
 ---
 
@@ -224,7 +218,7 @@ feat!: change the report export format
 Every pull request should answer:
 - **What changed and why** - in plain language, not a restatement of the diff.
 - **Related task / issue** - a link.
-- **How it was tested** - what you ran.
+- **How it was verified** - what you ran or checked.
 - **Risk & scope** - does it touch sensitive areas (auth, data, billing)?
 
 ### Bug report
