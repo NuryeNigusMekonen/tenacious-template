@@ -1,27 +1,21 @@
-<!-- PR template. Fixes the "no description" problem:
-     a PR must explain what changed and why - not restate the diff. -->
+<!-- Keep this short. For what a thorough PR should cover and why, see
+     .github/PR_GUIDE.md - it's a reference, not a required checklist. -->
 
-## What changed and why
-<!-- Plain language: what this PR does and the reason for it. Required. -->
+## Description
 
-
-## Related task / issue
-<!-- Link the ticket or issue, e.g. closes #123 -->
+<!-- Plain language: what this PR does and why. Not a restatement of the diff. -->
 
 
-## How it was tested
-<!-- What you ran / checked. New code should carry proportionate tests. -->
+## Testing Instructions
 
-
-## Risk & scope
-<!-- Does it touch sensitive areas (auth, migrations, billing, PII, shared utils, prompts)?
-     Any behaviour change outside the stated scope? -->
+<!-- How to verify this works - what you ran or checked. -->
 
 
 ## Checklist
-- [ ] Description explains what & why (not a restatement of the diff)
-- [ ] Tests added/updated for changed behaviour
-- [ ] Lint / format / build pass locally
+
+- [ ] Title and description explain what & why (not a restatement of the diff)
 - [ ] No secrets, tokens, or credentials in the diff
-- [ ] Sensitive areas (if touched) called out above
-- [ ] Targets the correct branch per the branch policy (feature → dev → staging → main)
+- [ ] Sensitive or dependent changes called out above
+
+> Larger or risky PRs: see [`.github/PR_GUIDE.md`](PR_GUIDE.md) for the full
+> reference (service dependencies, API/changelog, docs, reviewers).
