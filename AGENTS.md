@@ -33,17 +33,6 @@ protected branch goes through a pull request.
 - **Tests travel with code** - new behaviour should carry proportionate tests
   (a convention here, not an enforced gate; run your stack's test tool directly).
 
-## AI-powered testing
-
-When you want thorough coverage for a feature - not a single quick test - use the
-`ai-powered-testing` skill (`.claude/skills/ai-powered-testing/`). It runs a
-layered, language-agnostic flow: one AI writes the unit/integration/E2E pyramid, a
-**second fresh-context AI** reviews it for vanity tests and weak assertions, and an
-optional **third** tries to break the feature with inputs the spec didn't
-anticipate. A single AI grading its own tests is a weak signal; the fresh context is
-the point. In Claude Code it auto-activates on prompts like "test this feature
-properly" or "have a second AI look at these tests".
-
 ## Commands
 
 The `Makefile` is the single command surface: `make install` (deps + hooks) and
