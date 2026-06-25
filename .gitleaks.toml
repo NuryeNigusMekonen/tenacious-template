@@ -1,13 +1,11 @@
-# gitleaks config - used by the local hooks IF gitleaks is
-# installed, and by CI if enabled. Extends the built-in ruleset; adds a
-# repo-specific rule + allowlist. The zero-dep scanner runs regardless, so
-# gitleaks is optional (fuller coverage when present).
+# Optional gitleaks config (used by hooks/CI when gitleaks is installed). Extends
+# the default ruleset with a repo-specific rule + allowlist. The zero-dep scanner
+# runs regardless.
 title = "tenacious gitleaks config"
 
 [extend]
 useDefault = true
 
-# --- repo-specific rules ------------------------------------------------------
 [[rules]]
 id = "db-connection-uri-with-password"
 description = "Database/broker connection URI carrying an inline password"
@@ -25,7 +23,6 @@ paths = [
   '''.*\.gitleaks\.toml$''',
   '''.*/secret-scan\.sh$''',
   '''(.*/)?security\.yml$''',
-  '''.*/pull_request_template\.md$''',
   '''(.*/)?package-lock\.json$''',
   '''(.*/)?pnpm-lock\.yaml$''',
   '''(.*/)?yarn\.lock$''',

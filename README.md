@@ -21,11 +21,9 @@ and Java, and runs the right tools for whatever your project uses.
 | **Security analysis** | Scans code for security vulnerabilities with Semgrep static analysis on every pull request. |
 | **Dependency scanning** | Flags outdated or vulnerable dependencies and opens pull requests to update them automatically. |
 | **Reviewer assignment** | Automatically requests the right human reviewer when sensitive files change (`CODEOWNERS`). |
-| **Pull request & issue templates** | Make every pull request explain what changed and why; keep issue reports consistent. |
 | **Code-quality checks** | Flag oversized pull requests and duplicated code to keep changes reviewable. |
 | **PR automation** | Auto-labels pull requests by what they touch, adds review hints (size, security, dependencies), and removes stale branches weekly (never `main`/`dev`/`staging`, never a branch with an open PR). It never merges or releases on its own - humans always decide. |
 | **Claude / Codex in your editor** (optional) | Ready MCP config lets Claude Code and OpenAI Codex talk to GitHub from this repo. Per-person, opt-in, no secret stored in the repo. See Section 8. |
-| **Release automation** | Works out the next version, generates a changelog, and tags a release from your commit messages. |
 | **Branch-flow enforcement** | Keeps code moving one direction - feature → dev → staging → main - and blocks merges that skip a stage. |
 
 ---
@@ -122,7 +120,8 @@ This creates the `dev` and `staging` branches and protects `main`, `dev`, and
 1. Cut a `feature/...` branch from `dev`.
 2. Make your change; run `make sast` locally before pushing.
 3. Commit - the secret hook checks for credentials automatically.
-4. Open a pull request into `dev`, using the pull-request template.
+4. Open a pull request into `dev` (in Claude Code, the `create-pull-request`
+   skill drafts the description in the standard format).
 5. The automated checks run; address anything they flag.
 6. Get it reviewed and merged.
 7. Promote `dev → staging → main` through pull requests as the work matures.
@@ -186,17 +185,17 @@ on it; the CI workflows and checks run regardless of whether you use it.
 
 ### Commit / pull-request titles
 
-Titles follow a simple prefix format. This keeps history readable and lets
-release versioning work automatically.
+Titles follow a simple prefix format. This keeps history readable and
+consistent (and the PR-title check warns when a title doesn't match).
 
 ```
 <type>: short summary
 
 types:
-  feat:     a new capability        → minor version bump
-  fix:      a bug fix               → patch version bump
-  feat!:    a breaking change       → major version bump
-  chore:    maintenance, no release
+  feat:     a new capability
+  fix:      a bug fix
+  feat!:    a breaking change
+  chore:    maintenance
   docs:     documentation only
   refactor: code change, no behaviour change
   test:     tests only
