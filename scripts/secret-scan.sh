@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# secret-scan.sh - zero-dependency, high-precision secret detector.
-# Refuses to commit/push obvious credential leaks. Tuned for PRECISION (very low
-# false-positive rate) so developers never feel the urge to disable it.
+# Zero-dependency, high-precision secret detector. Blocks obvious credential
+# leaks at commit/push and in CI.
 #
 # Usage:
 #   scripts/secret-scan.sh --staged        # staged changes (pre-commit hook)
@@ -38,7 +37,7 @@ scan_one() { # $1 = file content to read, $2 = real repo path (for allow/report)
   printf '%s' "$path" | grep -Pq "$ALLOWLIST_PATHS_RE" && return 0
   for entry in "${PATTERNS[@]}"; do
     label="${entry%%::*}"; re="${entry#*::}"
-    while IFS= read -r hit; do
+    while IFS= read  -r hit; do
       [ -z "$hit" ] && continue
       lineno="${hit%%:*}"; content="${hit#*:}"
       printf '%s' "$content" | grep -q "$PRAGMA" && continue

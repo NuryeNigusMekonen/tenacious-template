@@ -1,46 +1,25 @@
-# Governance - one place for everything whose goal is governing HOW changes flow
-# through the repo (not whether the code is good - that's quality.yml).
-#
-#   - branch-flow             : enforce promotion direction from .github/branch-flow.yml (REQUIRED check)
-#   - auto-label              : label PRs by the files they touch
-#   - smart-comments          : advisory review hints
-#   - cleanup-stale-branches  : weekly stale-branch sweep
-#
-# These never merge, release, or override a human decision. Versioning is owned
-# by release.yml, commit-title + code-quality checks by quality.yml, secret
-# scanning + Semgrep SAST by security.yml, reviewer routing by CODEOWNERS - this
-# file does not duplicate them.
-#
-# The "branch-flow" job name is load-bearing: scripts/setup-branch-protection.sh
-# requires it by name. Do not rename it without updating that script.
+# Governs HOW changes flow: branch-flow direction gate (REQUIRED), PR
+# auto-labelling, advisory review hints, and a weekly stale-branch sweep.
+# Never merges or releases on its own.
+# NOTE: the "branch-flow" job name is required by name in
+# scripts/setup-branch-protection.sh - do not rename without updating it.
 name: governance
 
 on:
   pull_request:
-    # Include 'reopened' and 'edited' so the branch-flow direction gate (a
-    # REQUIRED check) re-runs when a PR is reopened or its base branch changes -
-    # otherwise an illegal direction could slip through on a stale pass. The
-    # label/comment jobs are harmless on these events too.
+    # 'reopened'/'edited' so the direction gate re-runs if the base branch changes.
     types: [opened, synchronize, reopened, edited]
   schedule:
     - cron: "0 0 * * SUN"   # weekly stale-branch sweep, Sunday 00:00 UTC
 
-# Least-privilege: just enough to label PRs, comment, and delete merged branches.
 permissions:
   contents: write          # delete stale branches
   pull-requests: write     # add labels
   issues: write            # post comments (PR comments use the issues API)
 
 jobs:
-  # --- Direction gate: enforce the promotion flow (REQUIRED check) -------------
-  # Enforces the directional rule branch protection can't: code must flow in the
-  # declared promotion direction with no skipping. The allowed flow is NOT
-  # hardcoded here - it is read from .github/branch-flow.yml, so each project
-  # declares its own model (e.g. feature->dev->staging->main, or feature->dev->main)
-  # without editing this workflow. Fails a PR whose SOURCE branch isn't an allowed
-  # source for its TARGET. If the config is missing/empty, no rule is applied.
-  # Honest scope: strong guard against accidental jumps, but a determined admin
-  # can still bypass CI.
+  # Direction gate (REQUIRED): fails a PR whose source isn't allowed to merge
+  # into its target. Rules come from .github/branch-flow.yml, not this file.
   branch-flow:
     name: branch-flow
     if: github.event_name == 'pull_request'
@@ -120,7 +99,7 @@ jobs:
           sys.exit(1)
           PY
 
-  # --- Auto-label a PR by the kinds of files it touches ------------------------
+  # Auto-label a PR by the kinds of files it touches.
   auto-label:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
@@ -157,7 +136,7 @@ jobs:
               console.log(`Applied labels: ${unique.join(', ')}`);
             }
 
-  # --- Post context-aware review hints (advisory comment) ----------------------
+  # Post advisory review hints (size, security, dependencies).
   smart-comments:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
@@ -187,7 +166,8 @@ jobs:
               });
             }
 
-  # --- Weekly stale-branch cleanup (safe: protects the real flow) --------------
+  # Weekly stale-branch cleanup. Never touches main/dev/staging or branches
+  # with an open PR.
   cleanup-stale-branches:
     if: github.event_name == 'schedule'
     runs-on: self-hosted

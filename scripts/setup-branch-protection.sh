@@ -1,36 +1,20 @@
 #!/usr/bin/env bash
-# setup-branch-protection.sh - create the standard branch structure AND apply
-# branch protection via the GitHub API. Closes the gap
-# that templates carry FILES but not SETTINGS. Run once per repo after creating
-# it from the template.
+# Create dev + staging and apply branch protection (PR-only, passing checks,
+# code-owner review, no force-push/delete; main needs 2 approvals, dev/staging 1).
+# Run once per repo. Idempotent.
 #
-# Requires the GitHub CLI (`gh`) authenticated with repo admin rights:
-#   gh auth login
+# Requires gh authenticated with repo admin rights (gh auth login).
+# Usage: scripts/setup-branch-protection.sh <owner/repo>
 #
-# Usage:
-#   scripts/setup-branch-protection.sh <owner/repo>
-# example bash scripts/setup-branch-protection.sh NuryeNigusMekonen/test
-#
-# It will:
-#   1. Create dev and staging branches (if missing). main is production.
-#   2. Apply protection to main + dev + staging: require PRs, passing checks,
-#      and code-owner review; block force-push/delete; main requires 2
-#      approvals (Tech Lead + Project Owner), dev and staging require 1.
-# Flow: feature/* -> dev -> staging -> main (main is the production branch).
-# Idempotent - safe to re-run.
-#
-# NOTE on direction (feature -> dev -> staging -> main): GitHub protection
-# enforces PR-only + checks + reviewers, but does NOT natively reject a
-# wrong-source merge (e.g. dev -> main). The branch-flow job in the governance
-# workflow (.github/workflows/governance.yml) enforces direction on pull requests.
+# NOTE: GitHub protection can't reject a wrong-source merge (e.g. dev -> main);
+# the branch-flow job in governance.yml enforces direction on PRs.
 set -euo pipefail
 
 REPO="${1:?usage: setup-branch-protection.sh <owner/repo>}"
 DEFAULT="$(gh repo view "$REPO" --json defaultBranchRef -q .defaultBranchRef.name)"
 
-# --- 1. create the standard branches off the default branch ------------------
+# 1. Create dev + staging off the default (production) branch.
 base_sha="$(gh api "repos/${REPO}/git/refs/heads/${DEFAULT}" -q .object.sha)"
-# main is the production branch (the default). We create only dev and staging.
 for b in dev staging; do
   if gh api "repos/${REPO}/git/refs/heads/${b}" >/dev/null 2>&1; then
     echo "branch '${b}' already exists - skipping create."
@@ -41,18 +25,15 @@ for b in dev staging; do
   fi
 done
 
-# --- 2. protect each branch --------------------------------------------------
-# Required checks: security (secret scan + SAST gate) + branch-flow. The quality
-# jobs (pr-title, pr-size, duplicate-code) run on every PR but are advisory and
-# intentionally NOT required, so a warning never blocks a merge.
+# 2. Protect each branch. Required checks = security + branch-flow; the quality
+# jobs stay advisory (not required) on purpose.
 CONTEXTS='["security", "branch-flow"]'
 echo "Requiring checks: security + branch-flow."
 
 protect() { # $1 = branch, $2 = required approvals
   local branch="$1" approvals="$2"
   echo "protecting '${branch}' (require ${approvals} approval(s)) ..."
-  # Send a JSON body so field TYPES are correct (booleans/null, not strings).
-  # The -f/-F flags coerce everything to strings, which the API rejects.
+  # JSON body (not -f/-F) so field types stay correct - the API rejects strings.
   cat <<JSON | gh api -X PUT "repos/${REPO}/branches/${branch}/protection" \
       -H "Accept: application/vnd.github+json" --input - >/dev/null
 {

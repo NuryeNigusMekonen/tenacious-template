@@ -1,10 +1,5 @@
-# Code quality - one gate for everything that keeps the codebase clean and
-# reviewable. All jobs here share a single goal: quality. Consolidated from the
-# former quality.yml + commitlint.yml.
-#
-#   - pr-title       : Conventional-Commit title (powers release automation)
-#   - pr-size        : flag oversized PRs (advisory)
-#   - duplicate-code : copy-paste detection, language-agnostic (advisory)
+# Advisory code-quality checks: Conventional-Commit PR title, oversized-PR
+# warning, and duplicate-code detection. None block merges.
 name: quality
 
 on:
@@ -18,8 +13,7 @@ env:
   MAX_CHANGED_LINES: "800"
 
 jobs:
-  # --- Convention: Conventional-Commit PR title -------------------------------
-  # Advisory at first; can be flipped to blocking when merging.
+  # Conventional-Commit PR title (advisory; keeps history readable).
   pr-title:
     runs-on: self-hosted
     steps:
@@ -31,11 +25,10 @@ jobs:
           if echo "$title" | grep -Eq '^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9_-]+\))?!?: .+'; then
             echo "PR title OK: $title"
           else
-            echo "::warning::PR title '$title' is not a Conventional Commit (e.g. 'feat: add X' or 'fix(auth): handle Y'). This powers release automation + clean history."
+            echo "::warning::PR title '$title' is not a Conventional Commit (e.g. 'feat: add X' or 'fix(auth): handle Y'). Keeps history readable."
           fi
 
-  # --- Reviewability: PR size --------------------------------------------------
-  # Advisory; flip to blocking once tuned.
+  # PR size warning (advisory).
   pr-size:
     runs-on: self-hosted
     steps:
@@ -54,7 +47,7 @@ jobs:
             echo "::warning::This PR is large (${files} files, ${lines} lines). Consider splitting it for safer review."
           fi
 
-  # --- Maintainability: duplicate code -----------------------------------------
+  # Duplicate-code detection (advisory).
   duplicate-code:
     runs-on: self-hosted
     steps:

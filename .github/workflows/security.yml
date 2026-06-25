@@ -1,32 +1,21 @@
-# Security - one gate for everything whose goal is finding vulnerabilities and
-# leaked credentials.
-#
-#   - secret-scan : Gitleaks + zero-dep scanner (always runs, text-based)
-#   - sast        : Semgrep static analysis via `make sast` (per PR)
-#   - security    : single REQUIRED status check gating the two jobs above
-#
-# Semgrep is the project's one static-analysis tool. It is multi-language
-# (covers Python, JS/TS, Go, etc.) and runs on every PR/push via `make sast`,
-# so local and CI behaviour stay identical.
-#
-# The "security" job name is load-bearing: scripts/setup-branch-protection.sh
-# requires it by name. Do not rename it without updating that script.
+# Finds leaked credentials and vulnerabilities: secret-scan (Gitleaks + zero-dep
+# scanner) and sast (Semgrep via `make sast`), gated by a single REQUIRED
+# "security" check.
+# NOTE: the "security" job name is required by name in
+# scripts/setup-branch-protection.sh - do not rename without updating it.
 name: security
 
 on:
-  pull_request:           # gate every PR (secret-scan, sast, security)
+  pull_request:
   push:
-    branches: ["**"]      # also catch direct pushes to any branch (no PR)
+    branches: ["**"]      # also catch direct pushes (no PR)
 
 permissions:
   contents: read
 
 jobs:
-  # --- Secret scanning (always runs - a leaked secret hurts any project) -------
+  # Secret scanning: Gitleaks (primary) + zero-dep scanner (hard gate, always runs).
   secret-scan:
-    # Primary: Gitleaks (the OSS standard, entropy + rules). Fallback: the
-    # zero-dep kit scanner, which always runs so protection holds with no extra
-    # tooling. Both are language-agnostic (text-based).
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +37,7 @@ jobs:
             echo "secret-scan: no scanner script or no files; skipping."
           fi
 
-  # --- SAST (Semgrep static analysis, per PR) ----------------------------------
-  # Semgrep is the single SAST tool (see `make sast`). Runs on every PR/push.
+  # SAST: Semgrep via `make sast`.
   sast:
     runs-on: self-hosted
     steps:
@@ -60,10 +48,8 @@ jobs:
       - name: SAST (make sast)
         run: make sast
 
-  # --- Security gate (single REQUIRED status check) ----------------------------
-  # Passes only when BOTH secret-scan and sast succeed. `if: always()` so the
-  # gate still runs (and fails) even when a dependency fails rather than being
-  # skipped along with it.
+  # REQUIRED gate: passes only when both secret-scan and sast succeed.
+  # if: always() so it still runs (and fails) when a dependency fails.
   security:
     name: security
     needs: [secret-scan, sast]
