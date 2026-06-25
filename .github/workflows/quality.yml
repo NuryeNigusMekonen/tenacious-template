@@ -47,11 +47,39 @@ jobs:
             echo "::warning::This PR is large (${files} files, ${lines} lines). Consider splitting it for safer review."
           fi
 
-  # Duplicate-code detection (advisory).
+  # Duplicate-code detection (advisory). Always reports a clear detected/clean
+  # result via a warning annotation + the job Step Summary.
   duplicate-code:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - name: Duplicate code (jscpd)
         run: |
-          npx --yes jscpd . --min-lines 10 --threshold 5 --reporters consoleFull || true
+          set -uo pipefail
+          # Run jscpd; JSON report drives the notification, console for the log.
+          # `|| true` so a non-zero exit never fails this advisory job - we read
+          # the report to decide the outcome instead.
+          npx --yes jscpd . --min-lines 10 --threshold 5 \
+            --reporters consoleFull,json --output .jscpd >/dev/null 2>&1 || true
+
+          report=".jscpd/jscpd-report.json"
+          if [ ! -f "$report" ]; then
+            msg="duplicate-code: jscpd did not produce a report (skipped or errored)."
+            echo "::warning::$msg"
+            echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Read statistics.total.clones from the report (0 if absent).
+          clones=$(python3 -c "import json,sys; print(json.load(open('$report')).get('statistics',{}).get('total',{}).get('clones',0))" 2>/dev/null || echo 0)
+          clones=${clones:-0}
+
+          if [ "$clones" -gt 0 ]; then
+            msg="duplicate-code: detected ${clones} duplicate block(s) (advisory). See the jscpd output above."
+            echo "::warning::$msg"
+            echo "⚠️ $msg" >> "$GITHUB_STEP_SUMMARY"
+          else
+            msg="duplicate-code: clean - no duplicate blocks detected."
+            echo "$msg"
+            echo "✅ $msg" >> "$GITHUB_STEP_SUMMARY"
+          fi

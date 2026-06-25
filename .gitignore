@@ -5,6 +5,8 @@
 .claude/*
 # ship committed skills (no secrets live here); keep settings.local.json ignored
 !.claude/skills/
+# Tool output
+.jscpd/
 # Editor / OS
 .vscode/
 .idea/
