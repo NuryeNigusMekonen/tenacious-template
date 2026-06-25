@@ -24,7 +24,9 @@ protected branch goes through a pull request.
   diffs, or logs. Use env vars / a secrets store. Example config lists variable
   names with placeholder values only. The pre-commit hook + CI scan enforce this.
 - **Every PR has a real description** - what changed and why, not a restatement
-  of the diff (use the PR template).
+  of the diff. The `create-pull-request` skill
+  (`.claude/skills/create-pull-request/`) drafts one in the standard
+  Problem / Goal / Scope / Verification format.
 - **Required checks must pass** before merge - security (secret-scan) and branch-flow.
 - **Keep PRs small and focused** - one concern per PR; large PRs are hard to
   review safely.
