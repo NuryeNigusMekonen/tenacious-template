@@ -1,7 +1,7 @@
 # Governance - one place for everything whose goal is governing HOW changes flow
 # through the repo (not whether the code is good - that's quality.yml).
 #
-#   - branch-flow             : enforce feature -> dev -> staging -> main direction (REQUIRED check)
+#   - branch-flow             : enforce promotion direction from .github/branch-flow.yml (REQUIRED check)
 #   - auto-label              : label PRs by the files they touch
 #   - smart-comments          : advisory review hints
 #   - cleanup-stale-branches  : weekly stale-branch sweep
@@ -33,9 +33,12 @@ permissions:
 
 jobs:
   # --- Direction gate: enforce the promotion flow (REQUIRED check) -------------
-  # Enforces the directional rule branch protection can't: code must flow
-  #   feature/* -> dev -> staging -> main (main is production), no skipping.
-  # Fails a PR whose SOURCE branch isn't the stage directly below its TARGET.
+  # Enforces the directional rule branch protection can't: code must flow in the
+  # declared promotion direction with no skipping. The allowed flow is NOT
+  # hardcoded here - it is read from .github/branch-flow.yml, so each project
+  # declares its own model (e.g. feature->dev->staging->main, or feature->dev->main)
+  # without editing this workflow. Fails a PR whose SOURCE branch isn't an allowed
+  # source for its TARGET. If the config is missing/empty, no rule is applied.
   # Honest scope: strong guard against accidental jumps, but a determined admin
   # can still bypass CI.
   branch-flow:
@@ -43,48 +46,79 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
     steps:
-      - name: Validate the merge direction
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate the merge direction against .github/branch-flow.yml
+        env:
+          SRC: ${{ github.head_ref }}    # branch the PR is FROM
+          DST: ${{ github.base_ref }}    # branch the PR is INTO
         run: |
           set -euo pipefail
-          src="${{ github.head_ref }}"     # the branch the PR is FROM
-          dst="${{ github.base_ref }}"     # the branch the PR is INTO
+          pip install pyyaml >/dev/null 2>&1 || true
+          python3 - <<'PY'
+          import os, sys, fnmatch
+          src, dst = os.environ["SRC"], os.environ["DST"]
+          print(f"PR direction: '{src}' -> '{dst}'")
 
-          echo "PR direction: '${src}' -> '${dst}'"
+          cfg_path = ".github/branch-flow.yml"
+          if not os.path.exists(cfg_path):
+              print(f"No {cfg_path}; branch-flow applies no direction rule."); sys.exit(0)
 
-          # Allowed direction, per target branch:
-          #   main    <- staging   (or a hotfix/* branch)
-          #   staging <- dev
-          #   dev     <- feature/* (or bugfix/*)
-          case "$dst" in
-            main)
-              if [ "$src" = "staging" ] || [[ "$src" == hotfix/* ]]; then
-                echo "OK: $src -> main is allowed."
-              else
-                echo "::error::Illegal merge. 'main' (production) may only receive from 'staging' (or a hotfix/* branch). Got '${src}'. Promote dev -> staging -> main; do not skip."
-                exit 1
-              fi
-              ;;
-            staging)
-              if [ "$src" = "dev" ] || [[ "$src" == hotfix/* ]]; then
-                echo "OK: $src -> staging is allowed."
-              else
-                echo "::error::Illegal merge. 'staging' may only receive from 'dev' (or a hotfix/* branch). Got '${src}'. Open the feature against dev first."
-                exit 1
-              fi
-              ;;
-            dev)
-              if [[ "$src" == feature/* ]] || [[ "$src" == bugfix/* ]] || [[ "$src" == hotfix/* ]]; then
-                echo "OK: $src -> dev is allowed."
-              else
-                echo "::error::Illegal merge. 'dev' should receive from feature/*, bugfix/*, or hotfix/* branches. Got '${src}'."
-                exit 1
-              fi
-              ;;
-            *)
-              # PRs targeting other branches (e.g. a feature branch) aren't gated.
-              echo "OK: target '${dst}' is not a protected stage; no direction rule applied."
-              ;;
-          esac
+          import yaml
+          with open(cfg_path) as f:
+              data = yaml.safe_load(f) or {}
+
+          # Named presets - the simple path: one line `model: <name>`.
+          # fix/* and hotfix/* ride alongside feature/*; hotfix/* may also go
+          # straight to main on the multi-stage models.
+          PRESETS = {
+              "trunk": {
+                  "main": ["feature/*", "fix/*", "hotfix/*"],
+              },
+              "dev-main": {
+                  "main": ["dev", "hotfix/*"],
+                  "dev":  ["feature/*", "fix/*", "hotfix/*"],
+              },
+              "dev-staging-main": {
+                  "main":    ["staging", "hotfix/*"],
+                  "staging": ["dev", "hotfix/*"],
+                  "dev":     ["feature/*", "fix/*", "hotfix/*"],
+              },
+          }
+
+          model = (data.get("model") or "").strip()
+          if model:
+              if model not in PRESETS:
+                  print(f"::warning::Unknown model '{model}' in {cfg_path} "
+                        f"(expected: {', '.join(PRESETS)}). No direction rule applied.")
+                  sys.exit(0)
+              flow = PRESETS[model]
+              print(f"Using preset model: {model}")
+          else:
+              # Advanced path: explicit flow map.
+              flow = data.get("flow") or {}
+              if not flow:
+                  print("No 'model' or 'flow' set; no direction rule applied."); sys.exit(0)
+              print("Using explicit 'flow' rules.")
+
+          # Targets not listed are ungated.
+          if dst not in flow:
+              print(f"OK: target '{dst}' is not a gated branch; no rule applied."); sys.exit(0)
+
+          allowed = flow[dst] or []
+          for pat in allowed:
+              # exact match, or trailing-* glob (feature/*)
+              if src == pat or fnmatch.fnmatch(src, pat):
+                  print(f"OK: {src} -> {dst} is allowed (matched '{pat}')."); sys.exit(0)
+
+          allowed_str = ", ".join(allowed) or "(none)"
+          print(f"::error::Illegal merge direction. '{dst}' may only receive from: "
+                f"{allowed_str}. Got '{src}'. Follow the promotion flow in "
+                f".github/branch-flow.yml; do not skip stages.")
+          sys.exit(1)
+          PY
 
   # --- Auto-label a PR by the kinds of files it touches ------------------------
   auto-label:

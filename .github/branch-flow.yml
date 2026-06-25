@@ -1,0 +1,27 @@
+# Branch-flow configuration - pick how code is promoted through branches.
+# The branch-flow job in .github/workflows/governance.yml reads this and fails
+# any PR that merges in the wrong direction. To configure, set ONE line below.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+#  model:  choose one of these presets
+# ─────────────────────────────────────────────────────────────────────────────
+#    trunk              feature/* ──────────────────────────────► main
+#    dev-main           feature/* ──► dev ───────────────────────► main
+#    dev-staging-main   feature/* ──► dev ──► staging ──► main
+#
+#  (fix/* and hotfix/* are always accepted alongside feature/*; hotfix/* may also
+#   go straight to main in the dev-main and dev-staging-main models.)
+#
+#  If 'model' is missing or unknown, no direction rule is applied.
+# ─────────────────────────────────────────────────────────────────────────────
+
+model: dev-staging-main
+
+# Advanced (optional): for a flow the presets don't cover, delete 'model' above
+# and declare the rules explicitly. Each key is a TARGET branch; its list is the
+# SOURCE branches (exact names or trailing-* globs) allowed to merge into it.
+#
+# flow:
+#   main:    [staging, "hotfix/*"]
+#   staging: [dev]
+#   dev:     ["feature/*", "fix/*", "hotfix/*"]
