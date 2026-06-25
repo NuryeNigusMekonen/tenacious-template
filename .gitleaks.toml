@@ -17,12 +17,19 @@ tags = ["database", "credentials"]
 # --- allowlist ----------------------------------------------------------------
 [allowlist]
 description = "Placeholders, dev defaults, and files that describe secret patterns"
+# Keep this set aligned with ALLOWLIST_PATHS_RE in scripts/secret-scan.sh so both
+# scanners agree on which files legitimately hold placeholders / lockfile hashes.
 paths = [
   '''.*\.env\.example$''',
+  '''.*\.env\.template$''',
   '''.*\.gitleaks\.toml$''',
   '''.*/secret-scan\.sh$''',
+  '''(.*/)?security\.yml$''',
   '''.*/pull_request_template\.md$''',
   '''(.*/)?package-lock\.json$''',
+  '''(.*/)?pnpm-lock\.yaml$''',
+  '''(.*/)?yarn\.lock$''',
+  '''(.*/)?uv\.lock$''',
   '''(.*/)?AGENTS\.md$''',
   '''(.*/)?README\.md$''',
   '''(.*/)?CONTRIBUTING\.md$''',
