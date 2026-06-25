@@ -57,9 +57,7 @@ behaviour match. They auto-detect your language.
 | Command | What it does |
 |---------|--------------|
 | `make install` | Install dependencies and activate the local secret-scanning hooks |
-| `make build` | Build the project |
-| `make sast` | Run Semgrep static analysis |
-| `make secret-scan` | Scan the repository for secrets |
+| `make sast` | Run Semgrep static analysis (the target CI also runs) |
 
 If your project uses a language or layout the defaults don't cover, edit the
 matching recipe in the `Makefile` - that is the intended place to adapt the
@@ -122,7 +120,7 @@ This creates the `dev` and `staging` branches and protects `main`, `dev`, and
 ## 7. How to work with the template (the everyday flow)
 
 1. Cut a `feature/...` branch from `dev`.
-2. Make your change; run `make build` and `make sast` locally.
+2. Make your change; run `make sast` locally before pushing.
 3. Commit - the secret hook checks for credentials automatically.
 4. Open a pull request into `dev`, using the pull-request template.
 5. The automated checks run; address anything they flag.

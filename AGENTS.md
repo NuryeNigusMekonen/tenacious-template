@@ -33,8 +33,9 @@ protected branch goes through a pull request.
 
 ## Commands
 
-The `Makefile` is the single command surface: `make install`, `make build`,
-`make sast`, `make secret-scan`. CI runs the same targets.
+The `Makefile` is the single command surface: `make install` (deps + hooks) and
+`make sast` (the target CI also runs). Secret scanning runs via
+`scripts/secret-scan.sh` directly (git hooks + CI).
 
 ## CI runner
 

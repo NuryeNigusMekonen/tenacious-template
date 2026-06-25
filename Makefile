@@ -1,11 +1,11 @@
 # The single command surface for this project.
-# Where CI runs a target (sast, secret-scan), it calls the SAME target here,
-# so local and pipeline behaviour stay identical.
+# CI calls `make sast`, so local and pipeline behaviour stay identical.
+# (Secret scanning runs via scripts/secret-scan.sh directly - hooks + CI.)
 #
 # Auto-detects Python and/or Node and runs the right commands. A polyglot repo
 # (both) runs both. Override any command by editing the recipe for your stack.
 
-.PHONY: help install build sast secret-scan
+.PHONY: help install sast
 
 # --- stack detection ---------------------------------------------------------
 HAS_PY   := $(shell { [ -f pyproject.toml ] || ls requirements*.txt >/dev/null 2>&1 || git ls-files '*.py' 2>/dev/null | grep -q . ; } && echo yes)
@@ -15,7 +15,7 @@ HAS_RUST := $(shell [ -f Cargo.toml ] && echo yes)
 HAS_JAVA := $(shell { [ -f pom.xml ] || ls build.gradle* >/dev/null 2>&1 ; } && echo yes)
 
 help:
-	@echo "Targets: install | build | sast | secret-scan"
+	@echo "Targets: install | sast"
 	@echo "Detected: Python=$(if $(HAS_PY),yes,no) Node=$(if $(HAS_JS),yes,no) Go=$(if $(HAS_GO),yes,no) Rust=$(if $(HAS_RUST),yes,no) Java=$(if $(HAS_JAVA),yes,no)"
 
 install:
@@ -42,31 +42,10 @@ endif
 	@# Activate the secret-scanning hooks on every setup.
 	bash scripts/install-hooks.sh
 
-build:
-ifeq ($(HAS_PY),yes)
-	@python -m build 2>/dev/null || echo "python build: no build step configured (ok)"
-endif
-ifeq ($(HAS_JS),yes)
-	npm run build --if-present
-endif
-ifeq ($(HAS_GO),yes)
-	go build ./...
-endif
-ifeq ($(HAS_RUST),yes)
-	cargo build
-endif
-ifeq ($(HAS_JAVA),yes)
-	@[ -f pom.xml ] && mvn -q -DskipTests package || ./gradlew build -x test
-endif
-	@echo "build: done"
-
 sast:
 	@# Semgrep is the single SAST tool - multi-language (covers Python, JS/TS,
-	@# Go, etc.) and runs for any stack on every PR/push.
+	@# Go, etc.) and runs for any stack on every PR/push. CI calls this target.
 	pip install semgrep >/dev/null 2>&1 || true
 	semgrep --config=auto --error || true   # advisory; flip --error to block
 	@echo "sast: done"
-
-secret-scan:
-	bash scripts/secret-scan.sh $$(git ls-files)
 
