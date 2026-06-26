@@ -1,0 +1,61 @@
+# the labels appear the first time a matching PR is opened.
+name: pr-labels
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write   # add labels
+  issues: write          # create labels (labels are an issues-API resource)
+
+jobs:
+  auto-label:
+    runs-on: self-hosted
+    steps:
+      - name: Label by file changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = context.issue.number;
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number, per_page: 100,
+            });
+
+            // file pattern -> label name + colour (colour used only when creating)
+            const RULES = [
+              { re: /\.(py|java|js|ts|jsx|tsx|go|rs)$/,                 name: 'code',          color: '1d76db' },
+              { re: /\.md$/,                                            name: 'documentation', color: '0075ca' },
+              { re: /(test|spec)/i,                                     name: 'testing',       color: 'd4c5f9' },
+              { re: /(\.github|\.ya?ml|Makefile)/,                     name: 'ci-cd',         color: '0e8a16' },
+              { re: /(security|auth|crypto|secret)/i,                   name: 'security',      color: 'd73a4a' },
+              { re: /(requirements|pyproject|package\.json|go\.mod|Cargo\.toml)/, name: 'dependencies', color: '0366d6' },
+            ];
+
+            const wanted = new Map();
+            for (const file of files) {
+              for (const rule of RULES) {
+                if (rule.re.test(file.filename)) wanted.set(rule.name, rule.color);
+              }
+            }
+            if (wanted.size === 0) { console.log('No labels matched.'); return; }
+
+            // Ensure each label exists (create on first use), then apply.
+            for (const [name, color] of wanted) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (e) {
+                if (e.status === 404) {
+                  await github.rest.issues.createLabel({ owner, repo, name, color });
+                  console.log(`Created label: ${name}`);
+                } else { throw e; }
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner, repo, issue_number: pull_number, labels: [...wanted.keys()],
+            });
+            console.log(`Applied labels: ${[...wanted.keys()].join(', ')}`);
