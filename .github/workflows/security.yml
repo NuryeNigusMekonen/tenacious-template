@@ -1,8 +1,7 @@
 # Finds leaked credentials and vulnerabilities: secret-scan (Gitleaks + zero-dep
-# scanner) and sast (Semgrep via `make sast`), gated by a single REQUIRED
-# "security" check.
-# NOTE: the "security" job name is required by name in
-# scripts/setup-branch-protection.sh - do not rename without updating it.
+# scanner) and sast (Semgrep via `make sast`), gated by a single "security" check.
+# It runs on every push/PR; mark it a required check in branch protection if your
+# plan supports it (private repos need a paid plan to enforce required checks).
 name: security
 
 on:

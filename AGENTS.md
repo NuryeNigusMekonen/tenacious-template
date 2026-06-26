@@ -6,9 +6,11 @@ Conventions for engineers and AI assistants working in this repository
 ## How work flows
 
 Branches map to environments and promote one direction only:
-`feature/* -> dev -> staging -> main` (main is the production branch). Code never skips a stage or flows
-backward (except an explicit hotfix reconciliation). Every merge into a
-protected branch goes through a pull request.
+`feature/* -> dev -> staging -> main` (main is the production branch). Code should
+not skip a stage or flow backward (except an explicit hotfix reconciliation), and
+every change lands through a pull request. This is the team convention; it is
+CI-enforced only when branch protection is configured (a paid-plan feature on
+private repos).
 
 ## Before you open a PR
 
@@ -27,7 +29,9 @@ protected branch goes through a pull request.
   of the diff. The `create-pull-request` skill
   (`.claude/skills/create-pull-request/`) drafts one in the standard
   Problem / Goal / Scope / Verification format.
-- **Required checks must pass** before merge - security (secret-scan) and branch-flow.
+- **The security check should pass** before merge - secret-scan + Semgrep SAST.
+  (On a paid plan you can make it a required check; the promotion flow below is a
+  convention to follow, not a CI-enforced gate.)
 - **Keep PRs small and focused** - one concern per PR; large PRs are hard to
   review safely.
 - **Tests travel with code** - new behaviour should carry proportionate tests

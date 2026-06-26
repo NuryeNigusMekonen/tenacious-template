@@ -1,14 +1,14 @@
 # Project Template - User Guide
 
-A GitHub template repository that gives every new project a secure-by-default,
-governed-by-default starting point. Click **"Use this
-template"** on GitHub to create a new repository from it.
+A GitHub template repository that gives every new project a secure-by-default
+starting point. Click **"Use this template"** on GitHub to create a new
+repository from it.
 
 This single guide is everything you need to use the template end to end:
-what it does, how to set it up, what to run, and the standard formats to follow.
+what it does, how to set it up, what to run, and the conventions to follow.
 
-It is multi-language - it auto-detects Python, JavaScript/TypeScript, Go, Rust,
-and Java, and runs the right tools for whatever your project uses.
+It is multi-language - `make install` auto-detects Python, JavaScript/TypeScript,
+Go, Rust, and Java and installs the right dependencies for whatever your project uses.
 
 ---
 
@@ -17,33 +17,33 @@ and Java, and runs the right tools for whatever your project uses.
 | Area | What it does |
 |------|--------------|
 | **Secret scanning** | Blocks credentials (passwords, API keys, tokens) from being committed or pushed - at commit time, push time, and in CI. |
-| **Build checks** | Run automatically on every pull request, so broken builds are caught before they merge. |
-| **Security analysis** | Scans code for security vulnerabilities with Semgrep static analysis on every pull request. |
-| **Dependency scanning** | Flags outdated or vulnerable dependencies and opens pull requests to update them automatically. |
-| **Reviewer assignment** | Automatically requests the right human reviewer when sensitive files change (`CODEOWNERS`). |
-| **Code-quality checks** | Flag oversized pull requests and duplicated code to keep changes reviewable. |
-| **PR automation** | Auto-labels pull requests by what they touch, adds review hints (size, security, dependencies), and removes stale branches weekly (never `main`/`dev`/`staging`, never a branch with an open PR). It never merges or releases on its own - humans always decide. |
+| **Security analysis** | Scans code for vulnerabilities with Semgrep static analysis on every pull request, behind a single `security` check. |
+| **Code-quality checks** | Flag non-conventional PR titles, oversized pull requests, and duplicated code to keep changes reviewable (advisory). |
+| **Dependency updates** | Dependabot opens weekly pull requests to bump outdated dependencies (`.github/dependabot.yml`). |
+| **Reviewer assignment** | Requests the right reviewer when sensitive files change (`CODEOWNERS`). |
+| **PR drafting skill** (optional) | The `create-pull-request` skill drafts a PR description in the standard format. See Section 7. |
 | **Claude / Codex in your editor** (optional) | Ready MCP config lets Claude Code and OpenAI Codex talk to GitHub from this repo. Per-person, opt-in, no secret stored in the repo. See Section 8. |
-| **Branch-flow enforcement** | Keeps code moving one direction - feature → dev → staging → main - and blocks merges that skip a stage. |
 
 ---
 
-## 2. How the branches work
+## 2. How the branches work (convention)
 
-Code flows in one direction, with no skipping. `main` is the production branch.
+The recommended flow is one direction, with no skipping. `main` is production.
 
 ```
 feature/*  →  dev  →  staging  →  main (production)
 ```
 
-Each protected branch requires a pull request, passing checks, and reviewer
-approval before code can merge. `main` requires two approvals.
+| Branch | Receives from | Suggested reviews |
+|--------|---------------|-------------------|
+| `dev` | `feature/*`, `fix/*` | 1 |
+| `staging` | `dev` | 1 |
+| `main` | `staging` | 2 |
 
-| Branch | Receives from | Reviews required |
-|--------|---------------|------------------|
-| `dev` | feature branches | 1 |
-| `staging` | `dev` only | 1 |
-| `main` | `staging` only | 2 |
+This is a **team convention**, not a CI-enforced gate. Enforcing it (required PRs,
+required checks, required reviews) needs branch protection, which on a private repo
+requires a paid plan - see Section 6. A shorter flow (e.g. `feature → dev → main`,
+or trunk-based `feature → main`) is fine; just keep promotion one-directional.
 
 ---
 
@@ -69,49 +69,47 @@ template to your project.
 2. **Run `make install`** once - installs dependencies and turns on the local
    secret-scanning hooks.
 3. **Adjust the `Makefile`** commands for your stack if the defaults don't fit.
-4. **Set your reviewers** - open `CODEOWNERS` and replace the example names with
-   your real team members or GitHub teams.
-5. **Turn on branch protection** so the checks become required before merging -
-   see Section 6.
-6. **Enable full CI** if this is a longer project - see Section 5.
-7. When ready, **make the security and quality checks blocking** instead of
-   advisory (they start in advisory mode so you can adopt them gradually).
+4. **Set your reviewers** - open `.github/CODEOWNERS` and replace the example
+   names with your real team members or GitHub teams.
+5. **On a paid plan, turn on branch protection** to make the `security` check
+   required before merging - see Section 6. On a free private repo, follow the
+   promotion flow as a convention instead.
+6. When ready, **make the checks blocking** - the quality checks and Semgrep
+   start advisory (they report but don't fail), so you can adopt them gradually
+   and tighten when the baseline is clean.
 
 ---
 
 ## 5. Continuous integration
 
 The workflows run automatically once the repo is on GitHub - there is nothing to
-switch on. Every pull request and push gets the full set of checks: secret
-scanning, Semgrep static analysis, the security gate, branch-flow direction,
-and the advisory quality checks (PR title, PR size, duplicate code).
+switch on. Every pull request and push gets: secret scanning, Semgrep static
+analysis, the security gate, and the advisory quality checks (PR title, PR size,
+duplicate code).
 
-Secret scanning and branch-flow enforcement protect any codebase regardless of
-size, and run on every project.
+Secret scanning protects any codebase regardless of size, and runs on every project.
+
+> **Runner requirement.** The workflows use `runs-on: self-hosted`, so a
+> self-hosted GitHub Actions runner must be registered and online for the repo or
+> org, with `git`, `bash`, `python3`+`pip`, `node`+`npx`, and `make` on its PATH.
+> **Without a self-hosted runner the jobs queue forever.** If you want to use
+> GitHub-hosted runners instead, replace `self-hosted` with `ubuntu-latest` in
+> `.github/workflows/*.yml`.
 
 ---
 
-## 6. Turning on branch protection
+## 6. Branch protection (paid plans only)
 
-Branch protection is a GitHub setting (not a file), so it is applied after the
-repo exists. Pick one:
+Branch protection is a GitHub setting, not a file. **Enforcing required checks and
+required reviews on a private repo needs a paid plan** (GitHub Team or above);
+GitHub Free for private repos cannot enforce them. This template therefore does
+not ship a protection script - on a free private repo the promotion flow below is
+a **convention the team follows manually**, not a CI-enforced gate.
 
-**Option A - apply once across the whole organization (recommended):**
-In your **organization → Settings → Rules → Rulesets → New branch ruleset**,
-target `main`, `dev`, `staging`, and enable: require a pull request, require the
-status checks to pass, require review from code owners, block force pushes,
-restrict deletions, and require conversation resolution. New repos then inherit
-this automatically.
-
-**Option B - apply per repository with the script:**
-With the GitHub CLI installed and authenticated as an admin, run:
-
-```
-bash scripts/setup-branch-protection.sh OWNER/REPO
-```
-
-This creates the `dev` and `staging` branches and protects `main`, `dev`, and
-`staging` with the rules above.
+If you are on a paid plan and want enforcement, apply a branch ruleset in
+**Settings → Rules → Rulesets**: target `main` (and `dev`/`staging` if you use
+them), and require a pull request, the `security` status check, force-push
+protection, and conversation resolution.
 
 ---
 
@@ -208,15 +206,15 @@ fix: correct cart total with discounts
 feat!: change the report export format
 ```
 
-### Pull-request description (from the template)
+### Pull-request description (recommended)
 
-Every pull request should answer:
+Every pull request should answer (the `create-pull-request` skill drafts this for you):
 - **What changed and why** - in plain language, not a restatement of the diff.
 - **Related task / issue** - a link.
 - **How it was verified** - what you ran or checked.
 - **Risk & scope** - does it touch sensitive areas (auth, data, billing)?
 
-### Bug report
+### Bug report (recommended)
 
 - What happened, and what you expected.
 - Steps to reproduce.

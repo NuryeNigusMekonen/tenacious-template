@@ -7,7 +7,8 @@ description: Create a GitHub pull request for the current branch in the repo's s
 
 Open a GitHub pull request for the current branch, with a body in the standard
 **Problem / Goal / Scope / Verification Steps** format. Respects this repo's
-promotion flow: `feature/* → dev → staging → main` (see `.github/branch-flow.yml`).
+promotion flow: `feature/* → dev → staging → main` (a team convention; adjust if
+your project uses a shorter flow such as `feature → dev → main`).
 
 ## Usage
 
@@ -124,7 +125,7 @@ Only include if UI files changed (`*.html`, `*.erb`, `*.tsx`, `*.jsx`, `*.vue`, 
 
 2. **Pre-flight checks** (block on failure):
    - On a non-protected branch (not `main`, `dev`, or `staging`).
-   - The source → base direction is legal under `.github/branch-flow.yml` (e.g. `feature/* → dev`, `dev → staging`, `staging → main`). If the chosen base would violate the flow, warn and ask before continuing — the `branch-flow` CI check will fail it otherwise.
+   - The source → base direction follows the promotion convention (e.g. `feature/* → dev`, `dev → staging`, `staging → main`). If the chosen base would skip a stage, warn and ask before continuing.
    - Working tree clean OR user explicitly chose to commit first / proceed with stash.
    - At least one commit ahead of the base branch.
 
