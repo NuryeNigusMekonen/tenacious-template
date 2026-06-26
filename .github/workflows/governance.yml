@@ -105,7 +105,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Label by file changes
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { data: files } = await github.rest.pulls.listFiles({
@@ -142,7 +142,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Add review hints
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { data: pr } = await github.rest.pulls.get({
@@ -173,7 +173,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Delete branches with no commits in 30+ days
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Never delete the protected stages of THIS template's flow.
