@@ -15,7 +15,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Label by file changes
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const { owner, repo } = context.repo;

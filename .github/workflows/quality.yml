@@ -32,7 +32,7 @@ jobs:
   pr-size:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Check PR size
@@ -52,7 +52,7 @@ jobs:
   duplicate-code:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Duplicate code (jscpd)
         run: |
           set -uo pipefail

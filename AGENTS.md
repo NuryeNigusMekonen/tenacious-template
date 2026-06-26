@@ -50,6 +50,9 @@ GitHub-hosted VMs. Unlike a fresh `ubuntu-latest` VM, the runner persists state
 between jobs and is **not** pre-loaded with tooling, so the host must have these
 on `PATH`: `git`, `bash`, `python3` + `pip`, `node` + `npx`, and `make`. If a
 job fails with "command not found", install the missing tool on the runner host.
+The Actions used here run on **Node.js 24**, so the runner host needs the GitHub
+Actions runner agent **v2.327.1 or newer** (a freshly downloaded runner already
+exceeds this); an older agent fails with a Node version error.
 
 ## First-time setup
 
